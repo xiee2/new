@@ -1,1 +1,94 @@
+import Foundation
+
+enum TokenType {
+    case number
+    case plus
+    case end
+}
+
+// 定义 Token 结构体
+struct Token {
+    let type: TokenType
+    let text: String
+}
+
+
+struct Lexer {
+    let input: String
+    var position: String.Index
+
+    init(input: String) {
+        self.input = input
+        self.position = input.startIndex
+    }
+
+    mutating func getNextToken() -> Token {
+        while position < input.endIndex {
+            let currentChar = input[position]
+
+            if currentChar.isNumber {
+                var number = String(currentChar)
+                position = input.index(after: position)
+
+                while position < input.endIndex, input[position].isNumber {
+                    number.append(input[position])
+                    position = input.index(after: position)
+                }
+
+                return Token(type: .number, text: number)
+            }
+
+            switch currentChar {
+            case "+":
+                position = input.index(after: position)
+                return Token(type: .plus, text: "+")
+            case " ":
+                position = input.index(after: position)
+            default:
+                fatalError("Invalid character: \(currentChar)")
+            }
+        }
+
+        return Token(type: .end, text: "")
+    }
+}
+
+struct Parser {
+    let lexer: Lexer
+    var currentToken: Token
+
+    init(lexer: Lexer) {
+        self.lexer = lexer
+        self.currentToken = lexer.getNextToken()
+    }
+
+    mutating func parse() -> Int {
+        var result = parseNumber()
+
+        while currentToken.type == .plus {
+            eat(.plus)
+            result += parseNumber()
+        }
+
+        return result
+    }
+
+    mutating func parseNumber() -> Int {
+        guard currentToken.type == .number else {
+            fatalError("Unexpected token: \(currentToken.text)")
+        }
+
+        let number = Int(currentToken.text)!
+        eat(.number)
+        return number
+    }
+
+    mutating func eat(_ tokenType: TokenType) {
+        guard currentToken.type == tokenType else {
+            fatalError("Unexpected token: \(currentToken.text)")
+        }
+
+        currentToken = lexer.getNextToken()
+    }
+}
 
